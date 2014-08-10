@@ -12,6 +12,18 @@ def get_first_vel(current, start_vel):
     else:
         return current + start_vel
 
+def get_gun_dir(current, which):
+    """current is also euclid vector2"""
+    if which == 'up':
+        return (current - euclid.Vector2(0, 1)).normalize()
+    elif which == 'down':
+        return (current + euclid.Vector2(0, 1)).normalize()
+    elif which == 'left':
+        return (current - euclid.Vector2(1, 0)).normalize()
+    elif which == 'right':
+        return (current + euclid.Vector2(1, 0)).normalize()
+            
+
 def get_new_vel(current, accel, max_vel):
     new = current + accel
     if abs(new) > max_vel and new < 0:
@@ -30,12 +42,15 @@ class MySprite:
 
 class MyCircle:
     def __init__(self, color=(0, 0, 0), posn=euclid.Vector2(20, 20), r=10, 
-                 line_width=0, vel=euclid.Vector2(0,0)):
+                 line_width=0, vel=euclid.Vector2(0,0), is_player=False, 
+                 gun_dir=euclid.Vector2(0, 1)):
         self.color = color
         self.posn = posn
         self.r = r
         self.line_width = line_width
         self.vel = vel
+        self.is_player = is_player
+        self.gun_dir = gun_dir
 
     def display(self, surface):
         pygame.draw.circle(surface, self.color, (int(self.posn.x), int(self.posn.y)), 

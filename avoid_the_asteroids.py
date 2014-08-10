@@ -20,8 +20,10 @@ START_R = 10
 MAX_VEL = 4
 ENEMY_SPAWN = 1
 DRAG = 0.9
-FPS = 60
+FPS = 6
 NUM_ENEMIES = 10
+FIRE_RATE = 10 # ie shoot every N frames
+BULLET_VEL = MAX_VEL * 3
 START_POSN = euclid.Vector2(400, 300)
 pygame.init()
 
@@ -40,7 +42,8 @@ running = True
 
 vel_x = 0
 vel_y = 0
-sprites = [MyCircle(color=BLUE, posn=START_POSN, r=START_R)]
+gun_dir = euclid.Vector2(0, 1)
+sprites = [MyCircle(color=BLUE, posn=START_POSN, r=START_R, is_player=True)]
 
 for n in range(1, NUM_ENEMIES):
     sprites.append(random_circle(PINK))
@@ -48,6 +51,7 @@ for n in range(1, NUM_ENEMIES):
 ## main program loop
 frame = 1
 user_quit = False
+shoot = False
 while running:
     # main event loop
     # user did something
@@ -61,14 +65,29 @@ while running:
         # user pressed down on a key
         if event.type == pygame.KEYDOWN:
             # check if an error key, if yes adjust speed
-            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+            if event.key == pygame.K_LEFT:
                 vel_x = get_first_vel(vel_x, -START_VEL)
-            if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+            if event.key == pygame.K_RIGHT:
                 vel_x = get_first_vel(vel_x, START_VEL)
-            if event.key == pygame.K_UP or event.key == pygame.K_w:
+            if event.key == pygame.K_UP:
                 vel_y = get_first_vel(vel_y, -START_VEL)
-            if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                vel_y = get_first_vel(vel_y, START_VEL)        
+            if event.key == pygame.K_DOWN:
+                vel_y = get_first_vel(vel_y, START_VEL)
+
+            # deal with gun orientation
+            if event.key == pygame.K_a:
+                gun_dir = get_gun_dir(gun_dir, 'left')
+                shoot = True
+            if  event.key == pygame.K_d:
+                gun_dir = get_gun_dir(gun_dir, 'right')
+                shoot = True                
+            if  event.key == pygame.K_w:
+                gun_dir = get_gun_dir(gun_dir, 'up')
+                shoot = True                
+            if  event.key == pygame.K_s:
+                gun_dir = get_gun_dir(gun_dir, 'down')
+                shoot = True                
+
                 
         # # user let up on a key
         # if event.type == pygame.KEYUP:
@@ -85,23 +104,43 @@ while running:
     # if key pressed down accelerate, else drag, grouped by axis
     if pygame.key.get_focused(): #make sure focus on screen
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_LEFT] or pressed[pygame.K_a]:
+        # movement in x direction
+        if pressed[pygame.K_LEFT]:
             vel_x = get_new_vel(vel_x, -BUTTON_ACCEL, MAX_VEL)
-        if pressed[pygame.K_RIGHT] or pressed[pygame.K_d]:
+        if pressed[pygame.K_RIGHT]:
             vel_x = get_new_vel(vel_x, BUTTON_ACCEL, MAX_VEL)
-        if not (pressed[pygame.K_LEFT] or pressed[pygame.K_a] or 
-                pressed[pygame.K_RIGHT] or pressed[pygame.K_d]):
+        if not (pressed[pygame.K_LEFT] or pressed[pygame.K_RIGHT]):
             vel_x *= DRAG
-            
-        if pressed[pygame.K_UP] or pressed[pygame.K_w]:
+
+        # movement in y direction
+        if pressed[pygame.K_UP]:
             vel_y = get_new_vel(vel_y, -BUTTON_ACCEL, MAX_VEL)
-        if pressed[pygame.K_DOWN] or pressed[pygame.K_s]:
+        if pressed[pygame.K_DOWN]:
             vel_y = get_new_vel(vel_y, BUTTON_ACCEL, MAX_VEL)
-        if not (pressed[pygame.K_UP] or pressed[pygame.K_w] or 
-                pressed[pygame.K_DOWN] or pressed[pygame.K_s]):
+        if not (pressed[pygame.K_UP] or pressed[pygame.K_DOWN]):
             vel_y *= DRAG
 
-    # game logic here
+        # continued gun movement
+        if pressed[pygame.K_a]:
+            gun_dir = get_gun_dir(gun_dir, 'left')
+            if frame % FIRE_RATE == 0:
+                shoot = True
+        if pressed[pygame.K_d]:
+            gun_dir = get_gun_dir(gun_dir, 'right')
+            if frame % FIRE_RATE == 0:
+                shoot = True
+        if pressed[pygame.K_w]:
+            gun_dir = get_gun_dir(gun_dir, 'up')
+            if frame % FIRE_RATE == 0:
+                shoot = True
+        if pressed[pygame.K_s]:
+            gun_dir = get_gun_dir(gun_dir, 'down')
+            if frame % FIRE_RATE == 0:
+                shoot = True
+
+    ## game logic here
+
+    # update player vel
     sprites[0].vel.x = vel_x
     sprites[0].vel.y = vel_y
 
@@ -138,11 +177,13 @@ while running:
     # limit to 60 frames per second
     clock.tick(FPS)
 
-    if frame == 60 * ENEMY_SPAWN:
-        frame = 1
+    if frame == 59 * ENEMY_SPAWN:
+        frame = 0
         sprites.append(random_circle(PINK))
 
     frame += 1
+    print shoot
+    shoot = False
 
 
 if not user_quit:
