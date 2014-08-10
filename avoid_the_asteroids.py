@@ -219,7 +219,7 @@ while running:
 
                 try:
                     sprites.pop(sprite_idx)
-                except: IndexError:
+                except IndexError:
                     pass
 
     # remove old goody baskets and check for collision with player
