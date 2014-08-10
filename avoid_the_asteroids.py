@@ -211,8 +211,16 @@ while running:
             foo, bar, was_collision = collide(bullet, sprite)
             if was_collision:
                 enemies_killed += 1
-                bullets.pop(bullet_idx)
-                sprites.pop(sprite_idx)
+
+                try:
+                    bullets.pop(bullet_idx)
+                except IndexError:
+                    pass
+
+                try:
+                    sprites.pop(sprite_idx)
+                except: IndexError:
+                    pass
 
     # remove old goody baskets and check for collision with player
     for goody_idx, goody_basket in enumerate(goody_baskets):
@@ -236,7 +244,8 @@ while running:
                 for enemy_idx, enemy in enumerate(sprites):
                     enemy.vel *= goody_modifier
             elif goody_basket.kind == 'fast shooter':
-                FIRE_RATE *= 1.0/goody_modifier
+                FIRE_RATE *= goody_modifier
+            elif goody_basket.kind == 'long range':
                 BULLET_LIFESPAN *= goody_modifier
             elif goody_basket.kind == 'uber gun':
                 ubergun = True
@@ -302,7 +311,7 @@ while running:
         else:
             sprites.append(random_circle(PINK, 1))
 
-    kinds = ['time warp', 'fast shooter', 'uber gun']
+    kinds = ['time warp', 'fast shooter', 'uber gun', 'long range']
     if frame % (59 * GOODY_SPAWN) == 0 and can_spawn:
         goody_baskets.append(GoodyBasket(frame, kind=random.choice(kinds),
                                          posn=euclid.Vector2(random.randint(50, 750), 
@@ -316,7 +325,8 @@ while running:
                 for i, enemy in enumerate(sprites):
                     enemy.vel *= 1.0/goody_modifier
             elif goody_kind == 'fast shooter':
-                FIRE_RATE *= goody_modifier
+                FIRE_RATE *= 1.0/goody_modifier
+            elif goody_kind == 'long range':
                 BULLET_LIFESPAN *= 1.0/goody_modifier
             elif goody_kind == 'uber gun':
                 ubergun = False

@@ -174,7 +174,11 @@ class GoodyBasket(Bullet):
         elif kind == 'fast shooter':
             color == LIGHT_BLUE
             self.effect_len = 600
-            self.modifier = 2 # shoot twice as fast, last twice as long
+            self.modifier = 0.5 # shoot twice as fast
+        elif kind == 'long range':
+            color = ORANGE
+            self.effect_len = 600
+            self.modifier = 2
         elif kind == 'hyperdrives':
             color = SUNSHINE
             self.effect_len = 240            
