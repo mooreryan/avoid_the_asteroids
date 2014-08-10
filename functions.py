@@ -117,6 +117,19 @@ class MyCircle:
         #        return self.solid_wall((screen_width, screen_height))
         self.toroid((screen_width, screen_height))
 
+class Bullet(MyCircle):
+    def __init__(self, spawn_frame, color=(255, 255, 255), 
+                 posn=euclid.Vector2(20, 20), r=2, 
+                 vel=euclid.Vector2(0,0)):
+        MyCircle.__init__(self, color=color, posn=posn, r=r, vel=vel)
+        self.spawn_frame = spawn_frame
+
+    def age(self, current_frame):
+        return current_frame - self.spawn_frame
+        
+
+    
+
 class MyRect:
     def __init__(self, color=(0, 0, 0), top_left=(20, 20), w=10, h=10, line_width=0):
         self.color = color

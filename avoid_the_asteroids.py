@@ -20,10 +20,11 @@ START_R = 10
 MAX_VEL = 4
 ENEMY_SPAWN = 1
 DRAG = 0.9
-FPS = 6
-NUM_ENEMIES = 10
+FPS = 60
+NUM_ENEMIES = 5
 FIRE_RATE = 10 # ie shoot every N frames
 BULLET_VEL = MAX_VEL * 3
+BULLET_LIFESPAN = 20 # in frames
 START_POSN = euclid.Vector2(400, 300)
 pygame.init()
 
@@ -52,6 +53,7 @@ for n in range(1, NUM_ENEMIES):
 frame = 1
 user_quit = False
 shoot = False
+bullets = []
 while running:
     # main event loop
     # user did something
@@ -77,16 +79,20 @@ while running:
             # deal with gun orientation
             if event.key == pygame.K_a:
                 gun_dir = get_gun_dir(gun_dir, 'left')
-                shoot = True
+                if frame % FIRE_RATE == 0:
+                    shoot = True
             if  event.key == pygame.K_d:
                 gun_dir = get_gun_dir(gun_dir, 'right')
-                shoot = True                
+                if frame % FIRE_RATE == 0:
+                    shoot = True
             if  event.key == pygame.K_w:
                 gun_dir = get_gun_dir(gun_dir, 'up')
-                shoot = True                
+                if frame % FIRE_RATE == 0:
+                    shoot = True
             if  event.key == pygame.K_s:
                 gun_dir = get_gun_dir(gun_dir, 'down')
-                shoot = True                
+                if frame % FIRE_RATE == 0:
+                    shoot = True
 
                 
         # # user let up on a key
@@ -138,20 +144,30 @@ while running:
             if frame % FIRE_RATE == 0:
                 shoot = True
 
-    ## game logic here
+    ## game logic here ##
 
     # update player vel
     sprites[0].vel.x = vel_x
     sprites[0].vel.y = vel_y
 
+    if shoot:
+        print 'adding'
+        bullets.append(Bullet(frame, color=WHITE, posn=sprites[0].posn+gun_dir, r=2,
+                              vel=gun_dir*BULLET_VEL))
+
+    # remove bullts once they run out of 'time'
+    for i, bullet in enumerate(bullets):
+        if bullet.age(frame) > BULLET_LIFESPAN:
+            bullets.pop(i) # remove this bullet
+        
     
-    # drawing code goes here
+    ## drawing code goes here ##
 
     # deal with background
     screen.fill(BLACK)
     screen.blit(background_image, (0, 0))
 
-    # draw enemies
+    # draw sprites
     for idx, sprite in enumerate(sprites):
         sprite.display(screen)
         sprite.move(SIZE)
@@ -161,6 +177,11 @@ while running:
                 running = False
             elif idx == 0:
                 vel_x, vel_y = sprites[0].vel # update these vals too
+
+    # draw bullets
+    for idx, bullet in enumerate(bullets):
+        bullet.display(screen)
+        bullet.move(SIZE)
     
     # do this if you have solid wall
     # hit_x, hit_y = sprites[0].move(SIZE)
@@ -177,13 +198,14 @@ while running:
     # limit to 60 frames per second
     clock.tick(FPS)
 
-    if frame == 59 * ENEMY_SPAWN:
-        frame = 0
+    if frame % (59 * ENEMY_SPAWN) == 0:
         sprites.append(random_circle(PINK))
 
     frame += 1
-    print shoot
     shoot = False
+
+    print 'sprite', sprites[0].vel
+    print 'gun', gun_dir
 
 
 if not user_quit:
