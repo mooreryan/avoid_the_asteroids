@@ -178,7 +178,7 @@ class GoodyBasket(Bullet):
         elif kind == 'long range':
             color = ORANGE
             self.effect_len = 600
-            self.modifier = 2
+            self.modifier = 3
         elif kind == 'hyperdrives':
             color = SUNSHINE
             self.effect_len = 240            

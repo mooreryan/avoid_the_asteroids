@@ -341,10 +341,10 @@ while running:
 
 if not user_quit:
     font = pygame.font.SysFont('Helvetica', 40)
-    words = "It took %s enemies to defeat you!" % len(sprites[1:])
+    words = "You lasted %s seconds!" % (frame / 60)
     score = "You blew up %s asteroids!" % enemies_killed
     text = font.render(words, True, WHITE)
-    screen.blit(text, (110, 190))
+    screen.blit(text, (180, 190))
     text = font.render(score, True, WHITE)
     screen.blit(text, (160, 250))
     pygame.display.flip()
