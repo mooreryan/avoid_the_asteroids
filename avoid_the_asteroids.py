@@ -21,8 +21,7 @@ import euclid # from http://pyeuclid.googlecode.com/svn/trunk/euclid.py
 from functions import * # local file
 from pygame.locals import *
 
-# cool bug, use bullets to jump ships
-
+# cool idea, use bullets to jump ships
 
 # Define some colors
 BLACK = 0, 0, 0
@@ -31,20 +30,28 @@ GREEN = 0, 255, 0
 PINK = 230, 32, 32
 BLUE = 120, 217, 250
 PURPLE = 235, 133, 255
+
 PI = math.pi
 SIZE = 800, 600
 BUTTON_ACCEL = 0.25
 START_VEL = 1
 START_R = 10
 MAX_VEL = 4
-ENEMY_SPAWN = 1
 DRAG = 0.9
 FPS = 60
-NUM_ENEMIES = 10
+
+GOODY_SPAWN = 2
+GOODY_LIFESPAN = 240
+
+ENEMY_SPAWN = 1
+NUM_ENEMIES = 1
+
 FIRE_RATE = 8 # ie shoot every N frames
 BULLET_VEL = MAX_VEL * 2
 BULLET_LIFESPAN = 20 # in frames
+
 START_POSN = euclid.Vector2(400, 300)
+
 pygame.init()
 
 
@@ -73,7 +80,16 @@ for n in range(1, NUM_ENEMIES):
 frame = 1
 user_quit = False
 shoot = False
+ubergun = False
+can_spawn = True
+goody_modifier = 1
+goody_kind = False
+goody_collision_frame = False
+goody_effect_len = False
+original_values = True
 bullets = []
+goody_baskets = []
+enemies_killed = 0
 while running:
     # main event loop
     # user did something
@@ -170,7 +186,18 @@ while running:
     player.vel.x = vel_x
     player.vel.y = vel_y
 
-    if shoot:
+    if shoot and ubergun:
+        bul_dir_1 = rotate_vec(gun_dir, 15) # counter clockwise 30 deg
+        bul_dir_2 = gun_dir # center
+        bul_dir_3 = rotate_vec(gun_dir, 360-15) # clockwise 30 deg
+
+        bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
+                              vel=bul_dir_1*BULLET_VEL))
+        bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
+                              vel=bul_dir_2*BULLET_VEL))
+        bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
+                              vel=bul_dir_3*BULLET_VEL))
+    elif shoot:
         bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
                               vel=gun_dir*BULLET_VEL))
 
@@ -183,9 +210,41 @@ while running:
         for sprite_idx, sprite in enumerate(sprites):
             foo, bar, was_collision = collide(bullet, sprite)
             if was_collision:
+                enemies_killed += 1
                 bullets.pop(bullet_idx)
                 sprites.pop(sprite_idx)
-    
+
+    # remove old goody baskets and check for collision with player
+    for goody_idx, goody_basket in enumerate(goody_baskets):
+        if goody_basket.age(frame) > GOODY_LIFESPAN:
+            goody_baskets.pop(goody_idx)
+
+        foo, bar, was_collision = collide(goody_basket, player)
+        if was_collision:
+            # apply the affect of the goody basket
+            # remove the goody basket
+            original_values = False
+            can_spawn = False
+            goody_collision_frame = frame
+            # delete all other goody baskets
+            goody_baskets = []
+            goody_kind = goody_basket.kind
+            goody_modifier = goody_basket.modifier
+            goody_effect_len = goody_basket.effect_len
+            
+            if goody_basket.kind == 'time warp':
+                for enemy_idx, enemy in enumerate(sprites):
+                    enemy.vel *= goody_modifier
+            elif goody_basket.kind == 'fast shooter':
+                FIRE_RATE *= 1.0/goody_modifier
+                BULLET_LIFESPAN *= goody_modifier
+            elif goody_basket.kind == 'uber gun':
+                ubergun = True
+                FIRE_RATE *= 1.0/goody_modifier
+                BULLET_LIFESPAN *= goody_modifier
+
+            break
+        
     ## drawing code goes here ##
 
     # deal with background
@@ -215,6 +274,11 @@ while running:
     for idx, bullet in enumerate(bullets):
         bullet.display(screen)
         bullet.move(SIZE)
+
+    # draw goody baskets
+    for idx, goody in enumerate(goody_baskets):
+        goody.display(screen)
+        goody.blink(frame)
     
     # do this if you have solid wall
     # hit_x, hit_y = player.move(SIZE)
@@ -232,7 +296,34 @@ while running:
     clock.tick(FPS)
 
     if frame % (59 * ENEMY_SPAWN) == 0:
-        sprites.append(random_circle(PINK))
+        if goody_kind == 'time warp':
+            # will slow down spawned enemies
+            sprites.append(random_circle(PINK, goody_modifier))
+        else:
+            sprites.append(random_circle(PINK, 1))
+
+    kinds = ['time warp', 'fast shooter', 'uber gun']
+    if frame % (59 * GOODY_SPAWN) == 0 and can_spawn:
+        goody_baskets.append(GoodyBasket(frame, kind=random.choice(kinds),
+                                         posn=euclid.Vector2(random.randint(50, 750), 
+                                                             random.randint(50, 550))))
+    if not original_values:
+        if goody_effect_len < frame - goody_collision_frame:
+            can_spawn = True
+            # revert to unmodified state
+            original_values = True
+            if goody_kind == 'time warp':
+                for i, enemy in enumerate(sprites):
+                    enemy.vel *= 1.0/goody_modifier
+            elif goody_kind == 'fast shooter':
+                FIRE_RATE *= goody_modifier
+                BULLET_LIFESPAN *= 1.0/goody_modifier
+            elif goody_kind == 'uber gun':
+                ubergun = False
+                FIRE_RATE *= goody_modifier
+                BULLET_LIFESPAN *= 1.0/goody_modifier
+                                         
+                                                             
 
     frame += 1
     shoot = False
@@ -241,8 +332,11 @@ while running:
 if not user_quit:
     font = pygame.font.SysFont('Helvetica', 40)
     words = "It took %s enemies to defeat you!" % len(sprites[1:])
+    score = "You blew up %s asteroids!" % enemies_killed
     text = font.render(words, True, WHITE)
     screen.blit(text, (110, 190))
+    text = font.render(score, True, WHITE)
+    screen.blit(text, (160, 250))
     pygame.display.flip()
 
     pygame.event.set_allowed(pygame.QUIT)

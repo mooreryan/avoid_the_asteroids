@@ -18,6 +18,16 @@
 
 import pygame, euclid, math, random
 
+# for goody baskets
+SALMON = 255, 201, 201
+LILAC = 253, 201, 255
+LIGHT_BLUE = 201, 209, 255
+MINT = 201, 255, 245
+SUNSHINE = 251, 255, 201
+ORANGE = 255, 222, 201
+WHITE = 255, 255, 255
+BLACK = 0, 0, 0
+
 def reflect_x(vec):
     return vec.reflect(euclid.Vector2(1, 0))
 
@@ -144,8 +154,45 @@ class Bullet(MyCircle):
 
     def age(self, current_frame):
         return current_frame - self.spawn_frame
-        
 
+class GoodyBasket(Bullet):
+    def __init__(self, spawn_frame, color=(255, 255, 255),
+                 posn=euclid.Vector2(20, 20),
+                 vel=euclid.Vector2(0,0),
+                 kind='time warp'):
+
+        self.modifier = 1
+        if kind == 'time warp':
+            color = SALMON
+            self.effect_len = 600
+            # use to reduce velocity of all enemies by 1/10
+            self.modifier = 0.1
+        elif kind == 'uber gun':
+            color = LILAC
+            self.effect_len = 600
+            self.modifier = 2          
+        elif kind == 'fast shooter':
+            color == LIGHT_BLUE
+            self.effect_len = 600
+            self.modifier = 2 # shoot twice as fast, last twice as long
+        elif kind == 'hyperdrives':
+            color = SUNSHINE
+            self.effect_len = 240            
+        else:
+            color = WHITE
+            self.effect_len = 240
+            
+        Bullet.__init__(self, spawn_frame, color=color, posn=posn, r=4)
+        self.kind = kind
+
+    def blink(self, frame):
+        if frame % 20 == 0:
+            if self.r == 2:
+                self.r = 4
+            else:
+                self.r = 2
+                
+                
     
 
 class MyRect:
@@ -207,7 +254,7 @@ def collide(circ1, circ2):
         return [circ1.vel, circ2.vel, False]
                 
 
-def random_circle(color):
+def random_circle(color, modifier=1):
     rad = int(random.gauss(12, 10))
     if rad < 5:
         rad = 5
@@ -215,5 +262,15 @@ def random_circle(color):
                     posn=euclid.Vector2(random.randint(50, 750), 
                                         random.randint(50, 550)), 
                                         r=rad, 
-                                        vel = euclid.Vector2(random.randint(-2, 2), 
-                                                             random.randint(-2, 2)))
+                                        vel = euclid.Vector2(
+                                            random.randint(-2, 2), 
+                                            random.randint(-2, 2)) * modifier)
+
+def rotate_vec(vec, degrees):
+    radians = math.radians(degrees)
+    m = [[math.cos(radians), -math.sin(radians)],
+         [math.sin(radians), math.cos(radians)]]
+        
+    return euclid.Vector2(m[0][0] * vec.x + m[0][1] * vec.y,
+                          m[1][0] * vec.x + m[1][1] * vec.y).normalize()
+    
