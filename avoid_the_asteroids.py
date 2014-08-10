@@ -22,9 +22,9 @@ MAX_VEL = 4
 ENEMY_SPAWN = 1
 DRAG = 0.9
 FPS = 60
-NUM_ENEMIES = 5
-FIRE_RATE = 10 # ie shoot every N frames
-BULLET_VEL = MAX_VEL * 3
+NUM_ENEMIES = 10
+FIRE_RATE = 8 # ie shoot every N frames
+BULLET_VEL = MAX_VEL * 2
 BULLET_LIFESPAN = 20 # in frames
 START_POSN = euclid.Vector2(400, 300)
 pygame.init()
@@ -153,7 +153,6 @@ while running:
     player.vel.y = vel_y
 
     if shoot:
-        print 'adding'
         bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
                               vel=gun_dir*BULLET_VEL))
 
@@ -163,7 +162,7 @@ while running:
             bullets.pop(bullet_idx) # remove this bullet
 
         # check for bullets colliding with sprites except for player
-        for sprite_idx, sprite in enumerate(sprites[1:]):
+        for sprite_idx, sprite in enumerate(sprites):
             foo, bar, was_collision = collide(bullet, sprite)
             if was_collision:
                 bullets.pop(bullet_idx)
@@ -219,9 +218,6 @@ while running:
 
     frame += 1
     shoot = False
-
-    print 'sprite', player.vel
-    print 'gun', gun_dir
 
 
 if not user_quit:
