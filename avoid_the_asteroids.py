@@ -3,6 +3,7 @@ import euclid # from http://pyeuclid.googlecode.com/svn/trunk/euclid.py
 from functions import * # local file
 from pygame.locals import *
 
+# cool bug, use bullets to jump ships
 
 
 # Define some colors
@@ -44,8 +45,9 @@ running = True
 vel_x = 0
 vel_y = 0
 gun_dir = euclid.Vector2(0, 1)
-sprites = [MyCircle(color=BLUE, posn=START_POSN, r=START_R, is_player=True)]
+player = MyCircle(color=BLUE, posn=START_POSN, r=START_R, is_player=True)
 
+sprites = []
 for n in range(1, NUM_ENEMIES):
     sprites.append(random_circle(PINK))
 
@@ -147,19 +149,25 @@ while running:
     ## game logic here ##
 
     # update player vel
-    sprites[0].vel.x = vel_x
-    sprites[0].vel.y = vel_y
+    player.vel.x = vel_x
+    player.vel.y = vel_y
 
     if shoot:
         print 'adding'
-        bullets.append(Bullet(frame, color=WHITE, posn=sprites[0].posn+gun_dir, r=2,
+        bullets.append(Bullet(frame, color=WHITE, posn=player.posn+gun_dir, r=2,
                               vel=gun_dir*BULLET_VEL))
 
     # remove bullts once they run out of 'time'
-    for i, bullet in enumerate(bullets):
+    for bullet_idx, bullet in enumerate(bullets):
         if bullet.age(frame) > BULLET_LIFESPAN:
-            bullets.pop(i) # remove this bullet
-        
+            bullets.pop(bullet_idx) # remove this bullet
+
+        # check for bullets colliding with sprites except for player
+        for sprite_idx, sprite in enumerate(sprites[1:]):
+            foo, bar, was_collision = collide(bullet, sprite)
+            if was_collision:
+                bullets.pop(bullet_idx)
+                sprites.pop(sprite_idx)
     
     ## drawing code goes here ##
 
@@ -167,16 +175,24 @@ while running:
     screen.fill(BLACK)
     screen.blit(background_image, (0, 0))
 
-    # draw sprites
+    # draw player
+    player.display(screen)
+    player.move(SIZE)
+    # update velx and vely
+    vel_x, vel_y = player.vel
+    
+    # collide player if needed
+    for idx, sprite in enumerate(sprites):
+        foo, bar, was_collision = collide(player, sprite)
+        if was_collision:
+            running = False
+
+    # draw sprites and collide them
     for idx, sprite in enumerate(sprites):
         sprite.display(screen)
         sprite.move(SIZE)
         for i, next_sprite in enumerate(sprites[idx+1:]):
             sprite.vel, next_sprite.vel, was_collision = collide(sprite, next_sprite)
-            if idx == 0 and was_collision:
-                running = False
-            elif idx == 0:
-                vel_x, vel_y = sprites[0].vel # update these vals too
 
     # draw bullets
     for idx, bullet in enumerate(bullets):
@@ -184,7 +200,7 @@ while running:
         bullet.move(SIZE)
     
     # do this if you have solid wall
-    # hit_x, hit_y = sprites[0].move(SIZE)
+    # hit_x, hit_y = player.move(SIZE)
 
     # if hit_x:
     #     vel_x = 0
@@ -204,7 +220,7 @@ while running:
     frame += 1
     shoot = False
 
-    print 'sprite', sprites[0].vel
+    print 'sprite', player.vel
     print 'gun', gun_dir
 
 
